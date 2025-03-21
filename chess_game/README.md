@@ -1,5 +1,7 @@
 # Application de Jeu d'Échecs
 
+-> il faeut ajouter le mouvement en passant
+
 Il s'agit d'une application mobile Flutter pour un jeu d'échecs qui permet à deux joueurs de s'affronter sur le même appareil. L'application implémente les règles officielles des échecs et propose une interface graphique intuitive et réactive.
 
 ## Fonctionnalités
