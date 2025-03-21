@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/board.dart';
 import '../models/piece.dart';
+import '../providers/game_provider.dart';
+import '../services/move_validator.dart';
 import 'chess_piece.dart';
 
 class ChessBoardWidget extends StatefulWidget {
   final ChessBoard board;
   final Function(int, int, int, int) onPieceMoved;
-  final List<List<bool>> highlightedSquares;
+  final List<List<bool>>? highlightedSquares;
 
   const ChessBoardWidget({
     Key? key,
     required this.board,
     required this.onPieceMoved,
-    this.highlightedSquares = const [],
+    this.highlightedSquares,
   }) : super(key: key);
 
   @override
@@ -22,6 +25,7 @@ class ChessBoardWidget extends StatefulWidget {
 class _ChessBoardWidgetState extends State<ChessBoardWidget> {
   int? _selectedRow;
   int? _selectedCol;
+  List<List<int>> _validMoves = [];
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +50,15 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
             final isWhiteSquare = (row + col) % 2 == 0;
             final piece = widget.board.getPieceAt(row, col);
             final isSelected = _selectedRow == row && _selectedCol == col;
-            final isHighlighted = widget.highlightedSquares.isNotEmpty && 
-                                  widget.highlightedSquares.length > row && 
-                                  widget.highlightedSquares[row].length > col && 
-                                  widget.highlightedSquares[row][col];
+            
+            // Check if square is a valid move
+            final isValidMove = _validMoves.any((move) => move[0] == row && move[1] == col);
+            
+            // Check if square is highlighted
+            final isHighlighted = widget.highlightedSquares != null && 
+                                  row < widget.highlightedSquares!.length && 
+                                  col < widget.highlightedSquares![row].length && 
+                                  widget.highlightedSquares![row][col];
 
             return GestureDetector(
               onTap: () => _handleTap(row, col),
@@ -59,11 +68,13 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
                   Container(
                     color: isSelected
                         ? Colors.green.shade300
-                        : isHighlighted
-                            ? Colors.yellow.shade200
-                            : isWhiteSquare
-                                ? Colors.white
-                                : Colors.brown.shade400,
+                        : isValidMove
+                            ? Colors.green.shade100
+                            : isHighlighted
+                                ? Colors.yellow.shade200
+                                : isWhiteSquare
+                                    ? Colors.white
+                                    : Colors.brown.shade400,
                     width: squareSize,
                     height: squareSize,
                   ),
@@ -94,12 +105,37 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
                       ),
                     ),
                   
+                  // Valid move indicator
+                  if (isValidMove && piece == null)
+                    Center(
+                      child: Container(
+                        width: squareSize * 0.3,
+                        height: squareSize * 0.3,
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  
                   // Piece
                   if (piece != null)
                     Center(
                       child: ChessPieceWidget(
                         piece: piece,
                         size: squareSize * 0.8,
+                      ),
+                    ),
+                    
+                  // Valid capture indicator
+                  if (isValidMove && piece != null)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.red,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(squareSize / 2),
                       ),
                     ),
                 ],
@@ -112,25 +148,51 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
   }
 
   void _handleTap(int row, int col) {
+    // Get access to the game provider for move validation
+    final gameProvider = Provider.of<GameProvider>(context, listen: false);
+    final currentTurn = gameProvider.game.currentTurn;
+    final moveValidator = MoveValidator();
+    
     // If no piece is selected yet
     if (_selectedRow == null) {
       final piece = widget.board.getPieceAt(row, col);
-      if (piece != null) {
+      if (piece != null && piece.color == currentTurn) {
+        // Get valid moves for this piece
+        _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
+        
         setState(() {
           _selectedRow = row;
           _selectedCol = col;
         });
       }
     } else {
-      // A piece was already selected, attempt to move it
-      if (_selectedRow != row || _selectedCol != col) {
+      // A piece was already selected
+      // Check if the tap is on a valid move
+      final isValidMove = _validMoves.any((move) => move[0] == row && move[1] == col);
+      
+      if (isValidMove) {
+        // Execute the move
         widget.onPieceMoved(_selectedRow!, _selectedCol!, row, col);
+      } else {
+        // Check if selecting a different piece of the same color
+        final piece = widget.board.getPieceAt(row, col);
+        if (piece != null && piece.color == currentTurn) {
+          // Get valid moves for the new piece
+          _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
+          
+          setState(() {
+            _selectedRow = row;
+            _selectedCol = col;
+          });
+          return;
+        }
       }
       
-      // Clear selection
+      // Clear selection and valid moves
       setState(() {
         _selectedRow = null;
         _selectedCol = null;
+        _validMoves = [];
       });
     }
   }

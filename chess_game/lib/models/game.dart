@@ -48,7 +48,7 @@ class ChessGame {
 
   // Reset the game to initial state
   void reset() {
-    board._setupInitialPosition();
+    board.setupInitialPosition();
     moveHistory.clear();
     currentTurn = PieceColor.white;
     state = GameState.active;

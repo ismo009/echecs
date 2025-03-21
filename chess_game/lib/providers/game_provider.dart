@@ -33,35 +33,38 @@ class GameProvider extends ChangeNotifier {
     final to = Position(row: toRow, col: toCol);
     final capturedPiece = _game.board.getPieceAt(toRow, toCol);
     
-    // Check for special moves
-    bool isCheck = false;
-    bool isCheckmate = false;
-    bool isCastling = false;
-    bool isEnPassant = false;
-    bool isPawnPromotion = false;
-    PieceType? promotionPiece;
-    
-    // TODO: Implement special move detection
-    
     // Create the move
     final move = Move(
       from: from,
       to: to,
       piece: piece,
       capturedPiece: capturedPiece,
-      isCheck: isCheck,
-      isCheckmate: isCheckmate,
-      isCastling: isCastling,
-      isEnPassant: isEnPassant,
-      isPawnPromotion: isPawnPromotion,
-      promotionPiece: promotionPiece,
     );
     
     // Execute the move
     _game.makeMove(move);
     
+    // Update game state after the move
+    _updateGameState();
+    
     // Notify listeners about the change
     notifyListeners();
+  }
+
+  // Update the game state based on the current board position
+  void _updateGameState() {
+    final opposingColor = _game.currentTurn;
+    
+    // Check for checkmate or stalemate
+    if (_moveValidator.isCheckmate(_game.board, opposingColor)) {
+      _game.state = GameState.checkmate;
+    } else if (_moveValidator.isStalemate(_game.board, opposingColor)) {
+      _game.state = GameState.stalemate;
+    } else if (_moveValidator.isKingInCheck(_game.board, opposingColor)) {
+      _game.state = GameState.check;
+    } else {
+      _game.state = GameState.active;
+    }
   }
 
   // Reset the game to initial state

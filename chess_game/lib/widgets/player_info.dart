@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import '../models/piece.dart';
 
 class PlayerInfoWidget extends StatelessWidget {
   final Player player;

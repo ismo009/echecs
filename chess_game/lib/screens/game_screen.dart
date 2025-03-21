@@ -5,6 +5,7 @@ import '../widgets/move_history.dart';
 import '../widgets/player_info.dart';
 import '../models/game.dart';
 import '../providers/game_provider.dart';
+import '../models/piece.dart'; // Import PieceColor enum
 
 class GameScreen extends StatelessWidget {
   const GameScreen({Key? key}) : super(key: key);

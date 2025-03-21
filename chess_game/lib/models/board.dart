@@ -10,11 +10,18 @@ class ChessBoard {
       8,
       (_) => List.generate(8, (_) => null),
     );
-    _setupInitialPosition();
+    setupInitialPosition();
   }
 
   // Set up the initial position of all pieces
-  void _setupInitialPosition() {
+  void setupInitialPosition() {
+    // Clear the board first
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        squares[row][col] = null;
+      }
+    }
+
     // Set up pawns
     for (int i = 0; i < 8; i++) {
       squares[1][i] = ChessPiece(type: PieceType.pawn, color: PieceColor.black);

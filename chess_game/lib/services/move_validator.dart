@@ -23,6 +23,11 @@ class MoveValidator {
     return GameRules.canPieceMoveTo(board, fromRow, fromCol, toRow, toCol);
   }
   
+  // Check if a king is in check
+  bool isKingInCheck(ChessBoard board, PieceColor kingColor) {
+    return GameRules.isKingInCheck(board, kingColor);
+  }
+  
   // Get all valid moves for a piece
   List<List<int>> getValidMoves(
     ChessBoard board,
@@ -74,11 +79,11 @@ class MoveValidator {
   
   // Check if player is in checkmate
   bool isCheckmate(ChessBoard board, PieceColor color) {
-    return GameRules.isKingInCheck(board, color) && isGameOver(board, color);
+    return isKingInCheck(board, color) && isGameOver(board, color);
   }
   
   // Check if player is in stalemate
   bool isStalemate(ChessBoard board, PieceColor color) {
-    return !GameRules.isKingInCheck(board, color) && isGameOver(board, color);
+    return !isKingInCheck(board, color) && isGameOver(board, color);
   }
 }
