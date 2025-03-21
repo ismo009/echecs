@@ -1,80 +1,80 @@
-# Chess Game Application
+# Application de Jeu d'Échecs
 
-This is a Flutter mobile application for a chess game that allows two players to compete on the same device. The application implements the official rules of chess and provides an intuitive and responsive graphical interface.
+Il s'agit d'une application mobile Flutter pour un jeu d'échecs qui permet à deux joueurs de s'affronter sur le même appareil. L'application implémente les règles officielles des échecs et propose une interface graphique intuitive et réactive.
 
-## Features
+## Fonctionnalités
 
-- Two-player mode on the same device
-- Intuitive user interface
-- Official chess rules implemented
-- Move history tracking
-- Player information display
-- Settings for game configuration
+- Mode deux joueurs sur le même appareil
+- Interface utilisateur intuitive
+- Règles officielles des échecs implémentées
+- Suivi de l'historique des mouvements
+- Affichage des informations des joueurs
+- Paramètres pour la configuration du jeu
 
-## Project Structure
+## Structure du Projet
 
 ```
 chess_game
 ├── lib
-│   ├── main.dart                # Entry point of the application
-│   ├── models                   # Contains classes for game logic
-│   │   ├── board.dart           # Represents the chessboard
-│   │   ├── piece.dart           # Defines chess pieces and their movements
-│   │   ├── move.dart            # Represents a move made by a player
-│   │   ├── game.dart            # Manages overall game state
-│   │   └── player.dart          # Represents a player in the game
-│   ├── widgets                  # UI components
-│   │   ├── chess_board.dart     # Visual representation of the chessboard
-│   │   ├── chess_piece.dart     # Visual representation of chess pieces
-│   │   ├── move_history.dart     # Displays history of moves
-│   │   └── player_info.dart     # Displays player information
-│   ├── screens                  # Different screens of the app
-│   │   ├── game_screen.dart     # Main screen for playing the game
-│   │   ├── home_screen.dart     # Landing page of the app
-│   │   └── settings_screen.dart  # Configuration settings
-│   ├── utils                    # Utility functions and constants
-│   │   ├── constants.dart       # Defines constants used throughout the app
-│   │   └── game_rules.dart      # Implements chess rules
-│   ├── providers                # State management
-│   │   └── game_provider.dart   # Manages game state with ChangeNotifier
-│   └── services                 # Services for game logic
-│       └── move_validator.dart  # Validates moves according to chess rules
-├── assets                       # Assets used in the application
+│   ├── main.dart                # Point d'entrée de l'application
+│   ├── models                   # Contient les classes pour la logique du jeu
+│   │   ├── board.dart           # Représente l'échiquier
+│   │   ├── piece.dart           # Définit les pièces d'échecs et leurs mouvements
+│   │   ├── move.dart            # Représente un mouvement fait par un joueur
+│   │   ├── game.dart            # Gère l'état global du jeu
+│   │   └── player.dart          # Représente un joueur dans le jeu
+│   ├── widgets                  # Composants UI
+│   │   ├── chess_board.dart     # Représentation visuelle de l'échiquier
+│   │   ├── chess_piece.dart     # Représentation visuelle des pièces d'échecs
+│   │   ├── move_history.dart    # Affiche l'historique des mouvements
+│   │   └── player_info.dart     # Affiche les informations du joueur
+│   ├── screens                  # Différents écrans de l'application
+│   │   ├── game_screen.dart     # Écran principal pour jouer au jeu
+│   │   ├── home_screen.dart     # Page d'accueil de l'application
+│   │   └── settings_screen.dart # Paramètres de configuration
+│   ├── utils                    # Fonctions utilitaires et constantes
+│   │   ├── constants.dart       # Définit les constantes utilisées dans l'application
+│   │   └── game_rules.dart      # Implémente les règles des échecs
+│   ├── providers                # Gestion de l'état
+│   │   └── game_provider.dart   # Gère l'état du jeu avec ChangeNotifier
+│   └── services                 # Services pour la logique du jeu
+│       └── move_validator.dart  # Valide les mouvements selon les règles des échecs
+├── assets                       # Ressources utilisées dans l'application
 │   └── images
-│       └── pieces              # Images of chess pieces
-├── pubspec.yaml                # Flutter project configuration
-└── README.md                   # Project documentation
+│       └── pieces              # Images des pièces d'échecs
+├── pubspec.yaml                # Configuration du projet Flutter
+└── README.md                   # Documentation du projet
 ```
 
-## Setup Instructions
+## Instructions d'Installation
 
-1. Clone the repository:
+1. Cloner le dépôt:
    ```
-   git clone <repository-url>
+   git clone <url-du-dépôt>
    ```
 
-2. Navigate to the project directory:
+2. Naviguer vers le répertoire du projet:
    ```
    cd chess_game
    ```
 
-3. Install dependencies:
+3. Installer les dépendances:
    ```
    flutter pub get
    ```
 
-4. Run the application:
+4. Lancer l'application:
    ```
    flutter run
    ```
 
-## Usage
+## Utilisation
 
-- Launch the app and navigate to the home screen.
-- Start a new game to play chess against another player.
-- Use the intuitive interface to move pieces according to the official chess rules.
-- View the move history and player information during the game.
+- Lancez l'application et naviguez vers l'écran d'accueil.
+- Commencez une nouvelle partie pour jouer aux échecs contre un autre joueur.
+- Utilisez l'interface intuitive pour déplacer les pièces selon les règles officielles des échecs.
+- Consultez l'historique des mouvements et les informations des joueurs pendant la partie.
 
-## Contributing
+## Contribuer
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any suggestions or improvements.
+Les contributions sont les bienvenues! N'hésitez pas à soumettre une pull request ou à ouvrir une issue pour toute suggestion ou amélioration.
