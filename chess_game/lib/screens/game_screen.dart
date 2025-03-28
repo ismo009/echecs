@@ -14,96 +14,94 @@ class GameScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Stack(
         children: [
-          //Spirale de fond
+          // Spirale de fond
           const ColorfulSpiralBackground(),
-          
-          //Effet de CRT sur le background
-          const CRTScanLinesEffect(),
-          
-          //Le jeux d'échecs
+
+          // Contenu principal
           Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              //Nom du jeux
-                Padding(
-                padding: const EdgeInsets.only(top: 50.0), //50 pour éviter que la caméra soit sur le texte
+              // Titre du jeu
+              Padding(
+                padding: const EdgeInsets.only(top: 50.0),
                 child: Container(
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(8.0),
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: const Text(
-                  'SPIRALE DE L\'ÉCHEC', //Kastellik avait peut-etre raison...
+                    'SPIRALE DE L\'ÉCHEC',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontFamily: 'PixelArt',
+                      shadows: [
+                        Shadow(
+                          offset: Offset(2.0, 2.0),
+                          blurRadius: 3.0,
+                          color: Color.fromARGB(255, 36, 0, 0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Timer noir
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: const Text(
+                  '12:32',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 24,
-                    fontFamily: 'PixelArt', //Chercher plus tard une meilleure + proche de Balatro
-                    shadows: [
-                    Shadow(
-                      offset: Offset(2.0, 2.0),
-                      blurRadius: 3.0,
-                      color: Color.fromARGB(255, 0, 0, 0),
-                    ),
-                    ],
-                  ),
+                    fontFamily: 'PixelArt',
                   ),
                 ),
+              ),
+
+              // Plateau d'échecs
+              Center( 
+                child: SizedBox(
+                  width: screenWidth * 0.9,
+                  height: screenWidth * 1.1, //Bizarre mais sinon l'affichage est incorrect, donc tant pis
+                  child: ChessBoardWidget(
+                    board: Provider.of<GameProvider>(context).game.board,
+                    onPieceMoved: (fromRow, fromCol, toRow, toCol) {
+                      Provider.of<GameProvider>(context, listen: false)
+                          .makeMove(fromRow, fromCol, toRow, toCol);
+                    },
+                  ),
                 ),
-              
-              //Timers + plateau
-              Expanded(
-                child: Row(
-                  children: [
-                    //Timer noir
-                    Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: const Text(
-                        '12:32',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 24,
-                          fontFamily: 'PixelArt',
-                        ),
-                      ),
-                    ),
-                    
-                    // Chessboard
-                    Expanded(
-                      child: Center(
-                        child: ChessBoardWidget(
-                          board: Provider.of<GameProvider>(context).game.board,
-                          onPieceMoved: (fromRow, fromCol, toRow, toCol) {
-                            // Validate and execute the move
-                            Provider.of<GameProvider>(context, listen: false).makeMove(fromRow, fromCol, toRow, toCol);
-                          },
-                        ),
-                      ),
-                    ),
-                    
-                    // Timer for white player
-                    Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: Colors.pink,
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: const Text(
-                        '15:56',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 24,
-                          fontFamily: 'PixelArt',
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+
+              // Timer blanc
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.pink,
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: const Text(
+                  '15:56',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 24,
+                    fontFamily: 'PixelArt',
+                  ),
                 ),
               ),
             ],
