@@ -20,14 +20,14 @@ class GameScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Spirale de fond
+          //Spirale de l'echec
           const ColorfulSpiralBackground(),
 
-          // Contenu principal
+          //Contenu du jeux
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Titre du jeu
+              //Titrre
               Padding(
                 padding: const EdgeInsets.only(top: 50.0),
                 child: Container(
@@ -76,12 +76,15 @@ class GameScreen extends StatelessWidget {
               Center( 
                 child: SizedBox(
                   width: screenWidth * 0.9,
-                  height: screenWidth * 1.1, //Bizarre mais sinon l'affichage est incorrect, donc tant pis
+                  height: screenWidth * 1.1, //Bizarre car pas carré, mais sinon l'affichage bug
                   child: ChessBoardWidget(
                     board: Provider.of<GameProvider>(context).game.board,
                     onPieceMoved: (fromRow, fromCol, toRow, toCol) {
                       Provider.of<GameProvider>(context, listen: false)
                           .makeMove(fromRow, fromCol, toRow, toCol);
+                      
+                      // Jouer l'animation après le déplacement
+                      playMoveAnimation(fromRow, fromCol, toRow, toCol, context);
                     },
                   ),
                 ),
@@ -110,6 +113,102 @@ class GameScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+//Pour l'animation de deplacement
+void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, {String moveType = 'move'}) {
+  // Position de départ et d'arrivée dans le système de coordonnées de l'écran
+  final screenWidth = MediaQuery.of(context).size.width;
+  final boardSize = screenWidth * 0.9;
+  final cellSize = boardSize / 8;
+  
+  // Créer un overlay pour l'animation
+  final overlayState = Overlay.of(context);
+  late OverlayEntry overlayEntry;
+  
+  // Séquence d'images pour l'animation selon le type de mouvement
+  List<String> animationFrames;
+  int frameDuration;
+  
+  switch (moveType) {
+    case 'capture':
+      animationFrames = [
+        'assets/images/animations/capture0.png',
+        'assets/images/animations/capture1.png',
+        'assets/images/animations/capture2.png',
+        'assets/images/animations/capture3.png',
+      ];
+      frameDuration = 120; // Un peu plus lent pour la capture
+      break;
+    case 'promotion':
+      animationFrames = [
+        'assets/images/animations/promotion0.png',
+        'assets/images/animations/promotion1.png',
+        'assets/images/animations/promotion2.png',
+        'assets/images/animations/promotion3.png',
+      ];
+      frameDuration = 150; // Plus lent pour la promotion
+      break;
+    case 'move':
+    default:
+      animationFrames = [
+        'assets/images/animations/deplacement0.png',
+        'assets/images/animations/deplacement1.png',
+        'assets/images/animations/deplacement2.png',
+        'assets/images/animations/deplacement3.png',
+      ];
+      frameDuration = 100; // Standard pour un mouvement simple
+      break;
+  }
+  
+  int currentFrame = 0;
+  
+  // Calculer la position du plateau d'échecs sur l'écran avec correction
+  // Augmenter la valeur de boardTopOffset pour déplacer l'animation vers le bas
+  final double boardTopOffset = MediaQuery.of(context).size.height * 0.31; // Ajusté vers le bas
+  
+  overlayEntry = OverlayEntry(
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          // Positions dans le système de coordonnées du plateau d'échecs
+          final toXPos = toCol * cellSize;
+          final toYPos = toRow * cellSize;
+          
+          // Position absolue sur l'écran
+          final boardLeftOffset = (screenWidth - boardSize) / 2;
+          
+          return Positioned(
+            left: boardLeftOffset + toXPos,
+            top: boardTopOffset + toYPos + (cellSize * 2), // Ajout de 2 cases vers le bas
+            width: cellSize,
+            height: cellSize,
+            child: Image.asset(
+              animationFrames[currentFrame],
+              fit: BoxFit.contain,
+            ),
+          );
+        },
+      );
+    },
+  );
+  
+  // Ajouter l'overlay à l'écran
+  overlayState.insert(overlayEntry);
+  
+  void nextFrame() {
+    if (currentFrame < animationFrames.length - 1) {
+      currentFrame++;
+      overlayEntry.markNeedsBuild();
+      Future.delayed(Duration(milliseconds: frameDuration), nextFrame);
+    } else {
+      // Animation terminée, supprimer l'overlay
+      overlayEntry.remove();
+    }
+  }
+  
+  // Démarrer l'animation
+  Future.delayed(Duration(milliseconds: frameDuration), nextFrame);
 }
 
 // Widget pour l'effet des lignes de scan CRT
