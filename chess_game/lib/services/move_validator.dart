@@ -26,7 +26,37 @@ class MoveValidator {
   
   // Check if a king is in check
   bool isKingInCheck(ChessBoard board, PieceColor kingColor) {
-    return GameRules.isKingInCheck(board, kingColor);
+    // Find the position of the king
+    int kingRow = -1;
+    int kingCol = -1;
+    
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        final piece = board.getPieceAt(row, col);
+        if (piece != null && piece.type == PieceType.king && piece.color == kingColor) {
+          kingRow = row;
+          kingCol = col;
+          break;
+        }
+      }
+      if (kingRow != -1) break;
+    }
+    
+    // Check if any opponent piece can capture the king
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        final piece = board.getPieceAt(row, col);
+        if (piece != null && piece.color != kingColor) {
+          // Ignore check validation to see if the piece can attack the king
+          final canAttackKing = _canPieceAttack(board, row, col, kingRow, kingCol);
+          if (canAttackKing) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   }
   
   // Check for en passant specifically
@@ -51,8 +81,155 @@ class MoveValidator {
     return toRow == fromRow + direction && toCol == lastMove.to.col;
   }
   
+  // Méthode pour vérifier si un mouvement laisserait le roi en échec
+  bool wouldLeaveKingInCheck(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol, PieceColor color) {
+    // Créer une copie du plateau pour simuler le mouvement
+    ChessBoard tempBoard = _copyBoard(board);
+    
+    // Simuler le mouvement
+    final piece = tempBoard.getPieceAt(fromRow, fromCol);
+    tempBoard.squares[toRow][toCol] = piece;
+    tempBoard.squares[fromRow][fromCol] = null;
+    
+    // Vérifier si le roi est en échec après le mouvement simulé
+    return isKingInCheck(tempBoard, color);
+  }
+  
+  // Méthode pour copier l'état du plateau
+  ChessBoard _copyBoard(ChessBoard original) {
+    final copy = ChessBoard();
+    
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        final piece = original.getPieceAt(row, col);
+        if (piece != null) {
+          // Créer une copie de la pièce
+          copy.squares[row][col] = ChessPiece(
+            type: piece.type,
+            color: piece.color,
+            hasMoved: piece.hasMoved,
+          );
+        } else {
+          copy.squares[row][col] = null;
+        }
+      }
+    }
+    
+    return copy;
+  }
+  
+  // Vérifier si une pièce peut attaquer une position
+  bool _canPieceAttack(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol) {
+    final piece = board.getPieceAt(fromRow, fromCol);
+    if (piece == null) return false;
+    
+    switch (piece.type) {
+      case PieceType.pawn:
+        // Les pions attaquent diagonalement
+        final direction = piece.color == PieceColor.white ? -1 : 1;
+        return (fromRow + direction == toRow) && ((fromCol - 1 == toCol) || (fromCol + 1 == toCol));
+        
+      case PieceType.knight:
+        final rowDiff = (fromRow - toRow).abs();
+        final colDiff = (fromCol - toCol).abs();
+        return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+        
+      case PieceType.bishop:
+        return _canMoveOnDiagonal(board, fromRow, fromCol, toRow, toCol);
+        
+      case PieceType.rook:
+        return _canMoveOrthogonally(board, fromRow, fromCol, toRow, toCol);
+        
+      case PieceType.queen:
+        return _canMoveOnDiagonal(board, fromRow, fromCol, toRow, toCol) || 
+               _canMoveOrthogonally(board, fromRow, fromCol, toRow, toCol);
+               
+      case PieceType.king:
+        // Le roi peut attaquer les cases adjacentes
+        final rowDiff = (fromRow - toRow).abs();
+        final colDiff = (fromCol - toCol).abs();
+        return rowDiff <= 1 && colDiff <= 1;
+    }
+    
+    return false;
+  }
+  
+  // Vérifier le mouvement en diagonale (fou et reine)
+  bool _canMoveOnDiagonal(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol) {
+    final rowDiff = toRow - fromRow;
+    final colDiff = toCol - fromCol;
+    
+    // Vérifier que c'est une diagonale
+    if (rowDiff.abs() != colDiff.abs()) return false;
+    
+    final rowDir = rowDiff > 0 ? 1 : -1;
+    final colDir = colDiff > 0 ? 1 : -1;
+    
+    int r = fromRow + rowDir;
+    int c = fromCol + colDir;
+    
+    // Vérifier que le chemin est clair
+    while (r != toRow && c != toCol) {
+      if (board.getPieceAt(r, c) != null) {
+        return false; // Chemin bloqué
+      }
+      r += rowDir;
+      c += colDir;
+    }
+    
+    return true;
+  }
+  
+  // Vérifier le mouvement orthogonal (tour et reine)
+  bool _canMoveOrthogonally(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol) {
+    if (fromRow != toRow && fromCol != toCol) return false;
+    
+    if (fromRow == toRow) {
+      // Mouvement horizontal
+      final start = fromCol < toCol ? fromCol + 1 : toCol + 1;
+      final end = fromCol < toCol ? toCol : fromCol;
+      for (int c = start; c < end; c++) {
+        if (board.getPieceAt(fromRow, c) != null) {
+          return false; // Chemin bloqué
+        }
+      }
+    } else {
+      // Mouvement vertical
+      final start = fromRow < toRow ? fromRow + 1 : toRow + 1;
+      final end = fromRow < toRow ? toRow : fromRow;
+      for (int r = start; r < end; r++) {
+        if (board.getPieceAt(r, fromCol) != null) {
+          return false; // Chemin bloqué
+        }
+      }
+    }
+    
+    return true;
+  }
+  
   // Get all valid moves for a piece
   List<List<int>> getValidMoves(
+    ChessBoard board,
+    int row,
+    int col,
+    PieceColor currentTurn,
+    Move? lastMove
+  ) {
+    final List<List<int>> candidateMoves = _getBasicValidMoves(board, row, col, currentTurn, lastMove);
+    final List<List<int>> validMoves = [];
+    
+    // Filtrer les mouvements qui laisseraient le roi en échec
+    for (final move in candidateMoves) {
+      if (!wouldLeaveKingInCheck(board, row, col, move[0], move[1], currentTurn)) {
+        validMoves.add(move);
+      }
+    }
+    
+    return validMoves;
+  }
+  
+  // Renommer l'ancienne méthode pour l'utiliser comme base
+  List<List<int>> _getBasicValidMoves(
     ChessBoard board,
     int row,
     int col,
@@ -66,46 +243,181 @@ class MoveValidator {
       return validMoves;
     }
 
-    // Logic for pawns
-    if (piece.type == PieceType.pawn) {
-      final direction = piece.color == PieceColor.white ? -1 : 1;
-      final startRow = piece.color == PieceColor.white ? 6 : 1;
+    switch (piece.type) {
+      case PieceType.pawn:
+        return _getPawnMoves(board, row, col, piece.color, lastMove);
+      case PieceType.rook:
+        return _getRookMoves(board, row, col, piece.color);
+      case PieceType.knight:
+        return _getKnightMoves(board, row, col, piece.color);
+      case PieceType.bishop:
+        return _getBishopMoves(board, row, col, piece.color);
+      case PieceType.queen:
+        return _getQueenMoves(board, row, col, piece.color);
+      case PieceType.king:
+        return _getKingMoves(board, row, col, piece.color);
+      default:
+        return [];
+    }
+  }
 
-      // Forward move (one square)
-      if (row + direction >= 0 && row + direction < 8) {
-        if (board.getPieceAt(row + direction, col) == null) {
-          validMoves.add([row + direction, col]);
-          
-          // Double forward move from starting position
-          if (row == startRow && board.getPieceAt(row + 2 * direction, col) == null) {
-            validMoves.add([row + 2 * direction, col]);
-          }
-        }
-      }
-
-      // Diagonal captures
-      for (final colOffset in [-1, 1]) {
-        if (col + colOffset >= 0 && col + colOffset < 8 && row + direction >= 0 && row + direction < 8) {
-          final targetPiece = board.getPieceAt(row + direction, col + colOffset);
-          if (targetPiece != null && targetPiece.color != piece.color) {
-            validMoves.add([row + direction, col + colOffset]);
-          }
-        }
-      }
+  List<List<int>> _getPawnMoves(ChessBoard board, int row, int col, PieceColor color, Move? lastMove) {
+    final validMoves = <List<int>>[];
+    final direction = color == PieceColor.white ? -1 : 1;
+    final startRow = color == PieceColor.white ? 6 : 1;
+    
+    // Mouvement vers l'avant (une case)
+    if (row + direction >= 0 && row + direction < 8 && 
+        board.getPieceAt(row + direction, col) == null) {
+      validMoves.add([row + direction, col]);
       
-      // En passant
-      if (lastMove != null && lastMove.piece?.type == PieceType.pawn) {
-        if ((lastMove.from.row - lastMove.to.row).abs() == 2) { // Pawn moved 2 squares
-          if (row == lastMove.to.row && (col - lastMove.to.col).abs() == 1) { // Same rank, adjacent file
-            validMoves.add([row + direction, lastMove.to.col]);
+      // Mouvement double depuis la position initiale
+      if (row == startRow && board.getPieceAt(row + 2 * direction, col) == null) {
+        validMoves.add([row + 2 * direction, col]);
+      }
+    }
+    
+    // Captures diagonales
+    for (int colOffset in [-1, 1]) {
+      if (col + colOffset >= 0 && col + colOffset < 8 && 
+          row + direction >= 0 && row + direction < 8) {
+        final targetPiece = board.getPieceAt(row + direction, col + colOffset);
+        if (targetPiece != null && targetPiece.color != color) {
+          validMoves.add([row + direction, col + colOffset]);
+        }
+      }
+    }
+    
+    // En passant
+    if (lastMove != null && lastMove.piece?.type == PieceType.pawn) {
+      if ((lastMove.from.row - lastMove.to.row).abs() == 2) { // Le pion s'est déplacé de 2 cases
+        if (row == lastMove.to.row && (col - lastMove.to.col).abs() == 1) { // Même rang, colonne adjacente
+          validMoves.add([row + direction, lastMove.to.col]);
+        }
+      }
+    }
+    
+    return validMoves;
+  }
+  
+  List<List<int>> _getRookMoves(ChessBoard board, int row, int col, PieceColor color) {
+    final validMoves = <List<int>>[];
+    
+    // Directions: haut, droite, bas, gauche
+    final directions = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+    
+    for (var dir in directions) {
+      int r = row + dir[0];
+      int c = col + dir[1];
+      
+      while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        final targetPiece = board.getPieceAt(r, c);
+        if (targetPiece == null) {
+          // Case vide, on peut s'y déplacer
+          validMoves.add([r, c]);
+        } else {
+          // Pièce rencontrée
+          if (targetPiece.color != color) {
+            // Pièce ennemie, on peut la capturer
+            validMoves.add([r, c]);
+          }
+          // On arrête dans cette direction
+          break;
+        }
+        r += dir[0];
+        c += dir[1];
+      }
+    }
+    
+    return validMoves;
+  }
+  
+  List<List<int>> _getKnightMoves(ChessBoard board, int row, int col, PieceColor color) {
+    final validMoves = <List<int>>[];
+    
+    // Les 8 mouvements possibles pour le cavalier
+    final moves = [
+      [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+      [1, -2], [1, 2], [2, -1], [2, 1]
+    ];
+    
+    for (var move in moves) {
+      int r = row + move[0];
+      int c = col + move[1];
+      
+      if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        final targetPiece = board.getPieceAt(r, c);
+        if (targetPiece == null || targetPiece.color != color) {
+          validMoves.add([r, c]);
+        }
+      }
+    }
+    
+    return validMoves;
+  }
+  
+  List<List<int>> _getBishopMoves(ChessBoard board, int row, int col, PieceColor color) {
+    final validMoves = <List<int>>[];
+    
+    // Directions diagonales: haut-gauche, haut-droite, bas-droite, bas-gauche
+    final directions = [[-1, -1], [-1, 1], [1, 1], [1, -1]];
+    
+    for (var dir in directions) {
+      int r = row + dir[0];
+      int c = col + dir[1];
+      
+      while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        final targetPiece = board.getPieceAt(r, c);
+        if (targetPiece == null) {
+          // Case vide
+          validMoves.add([r, c]);
+        } else {
+          // Pièce rencontrée
+          if (targetPiece.color != color) {
+            // Pièce ennemie
+            validMoves.add([r, c]);
+          }
+          // On arrête dans cette direction
+          break;
+        }
+        r += dir[0];
+        c += dir[1];
+      }
+    }
+    
+    return validMoves;
+  }
+  
+  List<List<int>> _getQueenMoves(ChessBoard board, int row, int col, PieceColor color) {
+    // La reine combine les mouvements de la tour et du fou
+    final rookMoves = _getRookMoves(board, row, col, color);
+    final bishopMoves = _getBishopMoves(board, row, col, color);
+    return [...rookMoves, ...bishopMoves];
+  }
+  
+  List<List<int>> _getKingMoves(ChessBoard board, int row, int col, PieceColor color) {
+    final validMoves = <List<int>>[];
+    
+    // Toutes les cases adjacentes
+    for (int r = -1; r <= 1; r++) {
+      for (int c = -1; c <= 1; c++) {
+        // Ignorer la position actuelle
+        if (r == 0 && c == 0) continue;
+        
+        int newRow = row + r;
+        int newCol = col + c;
+        
+        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+          final targetPiece = board.getPieceAt(newRow, newCol);
+          if (targetPiece == null || targetPiece.color != color) {
+            validMoves.add([newRow, newCol]);
           }
         }
       }
     }
     
-    // Add logic for other piece types
-    // ...
-
+    // Rochade (à implémenter si nécessaire)
+    
     return validMoves;
   }
 

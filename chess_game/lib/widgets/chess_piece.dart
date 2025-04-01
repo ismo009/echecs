@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../models/piece.dart';
 import 'dart:io';
@@ -15,10 +16,11 @@ class ChessPieceWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Création du chemin de l'image basé sur le type et la couleur de la pièce
+
+    //Creation du path vers la texture de la piece
     String pieceColor = piece.color == PieceColor.white ? 'w' : 'b';
     String pieceType = '';
-    
+
     switch (piece.type) {
       case PieceType.king:
         pieceType = 'king';
@@ -39,20 +41,22 @@ class ChessPieceWidget extends StatelessWidget {
         pieceType = 'pawn';
         break;
     }
-    
-    // Construction du chemin complet de l'image
+
+    //Chemin complet
     String imagePath = 'assets/images/pieces/${pieceType}.${pieceColor}.png';
-    
+
     return SizedBox(
       width: size,
       height: size,
+
       child: Image.asset(
         imagePath,
         width: size,
         height: size,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          // En cas d'erreur (image non trouvée), utiliser l'image par défaut
+          //Imafe debug, insipiré du debug model de Source
+
           return Image.asset(
             'assets/images/pieces/default.png',
             width: size,
