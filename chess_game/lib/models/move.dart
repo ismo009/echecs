@@ -1,30 +1,14 @@
+import 'position.dart';
 import 'piece.dart';
-
-class Position {
-  final int row;
-  final int col;
-
-  const Position({required this.row, required this.col});
-
-  @override
-  String toString() {
-    // Convert to chess notation (e.g., e4, a8)
-    final file = String.fromCharCode('a'.codeUnitAt(0) + col);
-    final rank = 8 - row;
-    return '$file$rank';
-  }
-}
 
 class Move {
   final Position from;
   final Position to;
   final ChessPiece? piece;
   final ChessPiece? capturedPiece;
-  final bool isCheck;
-  final bool isCheckmate;
-  final bool isCastling;
   final bool isEnPassant;
-  final bool isPawnPromotion;
+  final bool isCastling;
+  final bool isPromotion;
   final PieceType? promotionPiece;
 
   Move({
@@ -32,85 +16,85 @@ class Move {
     required this.to,
     this.piece,
     this.capturedPiece,
-    this.isCheck = false,
-    this.isCheckmate = false,
-    this.isCastling = false,
     this.isEnPassant = false,
-    this.isPawnPromotion = false,
+    this.isCastling = false,
+    this.isPromotion = false,
     this.promotionPiece,
   });
 
-  // Convert the move to algebraic notation
   String toAlgebraicNotation() {
+    if (piece == null) return ''; // Can't generate notation without a piece
+    
+    // Handle castling first
     if (isCastling) {
-      return (to.col > from.col) ? 'O-O' : 'O-O-O';
+      // King-side castling
+      if (from.col < to.col) {
+        return 'O-O';
+      } else {
+        // Queen-side castling
+        return 'O-O-O';
+      }
     }
-
+    
     String notation = '';
-    if (piece != null) {
-      if (piece!.type != PieceType.pawn) {
-        // Add piece letter (K, Q, R, B, N)
-        switch (piece!.type) {
-          case PieceType.king:
-            notation += 'K';
-            break;
-          case PieceType.queen:
-            notation += 'Q';
-            break;
-          case PieceType.rook:
-            notation += 'R';
-            break;
-          case PieceType.bishop:
-            notation += 'B';
-            break;
-          case PieceType.knight:
-            notation += 'N';
-            break;
-          default:
-            break;
-        }
-      }
+    
+    // Add piece symbol unless it's a pawn
+    if (piece?.type != PieceType.pawn) {
+      notation += _getPieceSymbol(piece!.type);
     }
-
-    // Add 'x' for captures
-    if (capturedPiece != null) {
-      if (piece?.type == PieceType.pawn) {
-        notation += '${from.toString()[0]}'; // Add file for pawn captures
-      }
+    
+    // For pawn captures, add the file from which the pawn moved
+    if (piece?.type == PieceType.pawn && (capturedPiece != null || isEnPassant)) {
+      notation += _getFile(from.col);
+    }
+    
+    // Add 'x' if there was a capture
+    if (capturedPiece != null || isEnPassant) {
       notation += 'x';
     }
-
+    
     // Add destination square
-    notation += to.toString();
-
-    // Add promotion piece
-    if (isPawnPromotion && promotionPiece != null) {
-      notation += '=';
-      switch (promotionPiece!) {
-        case PieceType.queen:
-          notation += 'Q';
-          break;
-        case PieceType.rook:
-          notation += 'R';
-          break;
-        case PieceType.bishop:
-          notation += 'B';
-          break;
-        case PieceType.knight:
-          notation += 'N';
-          break;
-        default:
-          break;
-      }
+    notation += _getFile(to.col) + _getRank(to.row);
+    
+    // Add promotion piece if applicable
+    if (isPromotion && promotionPiece != null) {
+      notation += '=' + _getPieceSymbol(promotionPiece!);
     }
-
-    // Add check and checkmate symbols
-    if (isCheckmate) {
-      notation += '#';
-    } else if (isCheck) {
-      notation += '+';
-    }
-
+    
     return notation;
+  }
+
+  // Helper method to get the standard algebraic file (a-h)
+  String _getFile(int col) {
+    return String.fromCharCode('a'.codeUnitAt(0) + col);
+  }
+
+  // Helper method to get the standard algebraic rank (1-8)
+  String _getRank(int row) {
+    return (8 - row).toString();
+  }
+
+  // Helper method to get the symbol for each piece type
+  String _getPieceSymbol(PieceType type) {
+    switch (type) {
+      case PieceType.king:
+        return 'K';
+      case PieceType.queen:
+        return 'Q';
+      case PieceType.rook:
+        return 'R';
+      case PieceType.bishop:
+        return 'B';
+      case PieceType.knight:
+        return 'N';  // Note: Knight uses 'N'
+      case PieceType.pawn:
+        return '';   // Pawns have no symbol in algebraic notation
+    }
+  }
+
+  @override
+  String toString() {
+    // Simple toString for debugging
+    return 'Move: ${from.row},${from.col} -> ${to.row},${to.col}';
   }
 }
