@@ -1,3 +1,4 @@
+
 class Position {
   final int row;
   final int col;
@@ -12,3 +13,4 @@ class Position {
     return '$file$rank';
   }
 }
+
