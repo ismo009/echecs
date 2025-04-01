@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../models/piece.dart';
 import 'dart:io';
@@ -19,7 +20,7 @@ class ChessPieceWidget extends StatelessWidget {
     //Creation du path vers la texture de la piece
     String pieceColor = piece.color == PieceColor.white ? 'w' : 'b';
     String pieceType = '';
-    
+
     switch (piece.type) {
       case PieceType.king:
         pieceType = 'king';
@@ -40,10 +41,10 @@ class ChessPieceWidget extends StatelessWidget {
         pieceType = 'pawn';
         break;
     }
-    
+
     //Chemin complet
     String imagePath = 'assets/images/pieces/${pieceType}.${pieceColor}.png';
-    
+
     return SizedBox(
       width: size,
       height: size,

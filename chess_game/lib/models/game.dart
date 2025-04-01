@@ -14,6 +14,10 @@ class ChessGame {
   PieceColor currentTurn;
   GameState state;
   Move? lastMove;
+  
+  // Add these properties for promotion
+  bool isPromotionPending = false;
+  Position? promotionPosition;
 
   ChessGame({
     ChessBoard? board,
@@ -34,12 +38,22 @@ class ChessGame {
     
     if (piece == null) return;
 
+    // Check for pawn promotion
+    bool shouldPromote = false;
+    if (piece.type == PieceType.pawn) {
+      if ((piece.color == PieceColor.white && toRow == 0) || 
+          (piece.color == PieceColor.black && toRow == 7)) {
+        shouldPromote = true;
+      }
+    }
+
     // Create a move object
     var move = Move(
       from: Position(row: fromRow, col: fromCol),
       to: Position(row: toRow, col: toCol),
       piece: piece,
       capturedPiece: capturedPiece,
+      isPromotion: shouldPromote,
     );
 
     // Handle en passant capture
@@ -66,8 +80,21 @@ class ChessGame {
       isEnPassantCapture = true;
     }
 
-    // Execute the move on the board
+    // Execute move on board
     board.movePiece(fromRow, fromCol, toRow, toCol);
+
+    // Handle promotion
+    if (shouldPromote) {
+      isPromotionPending = true;
+      promotionPosition = Position(row: toRow, col: toCol);
+      
+      // Add move to history
+      moveHistory.add(move);
+      lastMove = move;
+      
+      // Don't change turn yet, wait for promotion choice
+      return;
+    }
 
     // Add to move history
     moveHistory.add(move);
@@ -79,12 +106,64 @@ class ChessGame {
     currentTurn = currentTurn == PieceColor.white ? PieceColor.black : PieceColor.white;
   }
 
-  // Reset the game to initial state
+  // Add this method for pawn promotion
+  void promotePawn(PieceType promotionType) {
+    if (!isPromotionPending || promotionPosition == null) return;
+    
+    int row = promotionPosition!.row;
+    int col = promotionPosition!.col;
+    
+    // Get the pawn to be promoted
+    ChessPiece? pawn = board.getPieceAt(row, col);
+    
+    if (pawn == null || pawn.type != PieceType.pawn) return;
+    
+    // Create the promoted piece
+    ChessPiece promotedPiece = ChessPiece(
+      type: promotionType,
+      color: pawn.color,
+      hasMoved: true,
+    );
+    
+    // Replace the pawn on the board
+    board.squares[row][col] = promotedPiece;
+    
+    // Update the last move with promotion info
+    if (lastMove != null) {
+      Move updatedMove = Move(
+        from: lastMove!.from,
+        to: lastMove!.to,
+        piece: lastMove!.piece,
+        capturedPiece: lastMove!.capturedPiece,
+        isEnPassant: lastMove!.isEnPassant,
+        isPromotion: true,
+        promotionPiece: promotionType,
+      );
+      
+      if (moveHistory.isNotEmpty) {
+        moveHistory.removeLast();
+        moveHistory.add(updatedMove);
+      }
+      
+      lastMove = updatedMove;
+    }
+    
+    // Reset promotion state
+    isPromotionPending = false;
+    promotionPosition = null;
+    
+    // Now switch the turn
+    currentTurn = currentTurn == PieceColor.white ? PieceColor.black : PieceColor.white;
+  }
+
+  // Reset the game
   void reset() {
     board.setupInitialPosition();
     moveHistory.clear();
     currentTurn = PieceColor.white;
     state = GameState.active;
     lastMove = null;
+    isPromotionPending = false;
+    promotionPosition = null;
   }
 }
