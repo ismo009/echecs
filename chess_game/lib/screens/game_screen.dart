@@ -20,14 +20,14 @@ class GameScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Spirale de fond
+          //Spirale de l'echec
           const ColorfulSpiralBackground(),
 
-          // Contenu principal
+          //Contenu du jeux
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Titre du jeu
+              //Titrre
               Padding(
                 padding: const EdgeInsets.only(top: 50.0),
                 child: Container(
@@ -76,12 +76,15 @@ class GameScreen extends StatelessWidget {
               Center( 
                 child: SizedBox(
                   width: screenWidth * 0.9,
-                  height: screenWidth * 1.1, //Bizarre mais sinon l'affichage est incorrect, donc tant pis
+                  height: screenWidth * 1.1, //Bizarre car pas carré, mais sinon l'affichage bug
                   child: ChessBoardWidget(
                     board: Provider.of<GameProvider>(context).game.board,
                     onPieceMoved: (fromRow, fromCol, toRow, toCol) {
                       Provider.of<GameProvider>(context, listen: false)
                           .makeMove(fromRow, fromCol, toRow, toCol);
+                      
+                      // Jouer l'animation après le déplacement
+                      playMoveAnimation(fromRow, fromCol, toRow, toCol, context);
                     },
                   ),
                 ),
@@ -110,6 +113,102 @@ class GameScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+//Pour l'animation de deplacement
+void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, {String moveType = 'move'}) {
+  // Position de départ et d'arrivée dans le système de coordonnées de l'écran
+  final screenWidth = MediaQuery.of(context).size.width;
+  final boardSize = screenWidth * 0.9;
+  final cellSize = boardSize / 8;
+  
+  // Créer un overlay pour l'animation
+  final overlayState = Overlay.of(context);
+  late OverlayEntry overlayEntry;
+  
+  // Séquence d'images pour l'animation selon le type de mouvement
+  List<String> animationFrames;
+  int frameDuration;
+  
+  switch (moveType) {
+    case 'capture':
+      animationFrames = [
+        'assets/images/animations/capture0.png',
+        'assets/images/animations/capture1.png',
+        'assets/images/animations/capture2.png',
+        'assets/images/animations/capture3.png',
+      ];
+      frameDuration = 120; // Un peu plus lent pour la capture
+      break;
+    case 'promotion':
+      animationFrames = [
+        'assets/images/animations/promotion0.png',
+        'assets/images/animations/promotion1.png',
+        'assets/images/animations/promotion2.png',
+        'assets/images/animations/promotion3.png',
+      ];
+      frameDuration = 150; // Plus lent pour la promotion
+      break;
+    case 'move':
+    default:
+      animationFrames = [
+        'assets/images/animations/deplacement0.png',
+        'assets/images/animations/deplacement1.png',
+        'assets/images/animations/deplacement2.png',
+        'assets/images/animations/deplacement3.png',
+      ];
+      frameDuration = 100; // Standard pour un mouvement simple
+      break;
+  }
+  
+  int currentFrame = 0;
+  
+  // Calculer la position du plateau d'échecs sur l'écran avec correction
+  // Augmenter la valeur de boardTopOffset pour déplacer l'animation vers le bas
+  final double boardTopOffset = MediaQuery.of(context).size.height * 0.31; // Ajusté vers le bas
+  
+  overlayEntry = OverlayEntry(
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          // Positions dans le système de coordonnées du plateau d'échecs
+          final toXPos = toCol * cellSize;
+          final toYPos = toRow * cellSize;
+          
+          // Position absolue sur l'écran
+          final boardLeftOffset = (screenWidth - boardSize) / 2;
+          
+          return Positioned(
+            left: boardLeftOffset + toXPos,
+            top: boardTopOffset + toYPos + (cellSize * 2), // Ajout de 2 cases vers le bas
+            width: cellSize,
+            height: cellSize,
+            child: Image.asset(
+              animationFrames[currentFrame],
+              fit: BoxFit.contain,
+            ),
+          );
+        },
+      );
+    },
+  );
+  
+  // Ajouter l'overlay à l'écran
+  overlayState.insert(overlayEntry);
+  
+  void nextFrame() {
+    if (currentFrame < animationFrames.length - 1) {
+      currentFrame++;
+      overlayEntry.markNeedsBuild();
+      Future.delayed(Duration(milliseconds: frameDuration), nextFrame);
+    } else {
+      // Animation terminée, supprimer l'overlay
+      overlayEntry.remove();
+    }
+  }
+  
+  // Démarrer l'animation
+  Future.delayed(Duration(milliseconds: frameDuration), nextFrame);
 }
 
 // Widget pour l'effet des lignes de scan CRT
@@ -230,7 +329,7 @@ class _ColorfulSpiralBackgroundState extends State<ColorfulSpiralBackground> wit
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 15),
+      duration: const Duration(seconds: 30), // Slower animation
       vsync: this,
     )..repeat();
   }
@@ -265,19 +364,16 @@ class _TornadoSpiralPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = math.sqrt(size.width * size.width + size.height * size.height) / 2;
     
-    // Nombre de bras dans la spirale
-    const int armCount = 8;
+    // Reduced number of arms for better performance
+    const int armCount = 5;
     
     // Couleurs vives pour les bras (avec transparence pour l'effet brouillard)
     final List<Color> colors = [
       const Color.fromARGB(180, 244, 67, 54),
       const Color.fromARGB(180, 255, 153, 0),
       const Color.fromARGB(180, 255, 235, 59),
-      const Color.fromARGB(180, 8, 85, 173),
       const Color.fromARGB(180, 33, 149, 243),
       const Color.fromARGB(180, 11, 192, 177),
-      const Color.fromARGB(180, 218, 238, 39),
-      const Color.fromARGB(180, 247, 42, 42),
     ];
     
     // Dessiner un fond sombre pour faire ressortir les couleurs
@@ -287,19 +383,31 @@ class _TornadoSpiralPainter extends CustomPainter {
     );
     
     // Paramètres pour la spirale
-    const double turns = 3.0; // Nombre de tours de la spirale
-    const double armWidth = 90.0; // Largeur de chaque bras (un peu plus large pour l'effet de fusion)
+    const double turns = 2.0; // Reduced number of turns
+    const double armWidth = 70.0; // Slightly thinner arms
     
-    // Dessiner d'abord les "ombres" des bras pour l'effet de brouillard
+    // Use a lower resolution for the paths (increase step size)
+    const double stepSize = 0.02; // Increased from 0.005 (4x faster)
+    
+    // Cache the sine calculations for variations
+    final variations = List.generate(
+      (1.0 / stepSize).ceil() + 1,
+      (index) => math.sin(index * stepSize * 10 + animationValue * math.pi * 4) * 2.0
+    );
+    
+    // Draw the spiral arms using a simplified approach
     for (int i = 0; i < armCount; i++) {
       final armPhase = i * (math.pi * 2 / armCount);
       final rotationOffset = animationValue * math.pi * 2;
+      final color = colors[i % colors.length];
       
+      // Create one path for both shadow and main arm to reduce drawing operations
       final path = Path();
       bool firstPoint = true;
       
-      // Points pour former le chemin du bras
-      for (double t = 0.0; t <= 1.0; t += 0.005) {
+      // Points pour former le chemin du bras (with larger step size)
+      int variationIndex = 0;
+      for (double t = 0.0; t <= 1.0; t += stepSize) {
         // Formule de la spirale avec rotation animée
         final angle = armPhase + turns * t * math.pi * 2 + rotationOffset;
         final radius = t * maxRadius;
@@ -308,46 +416,9 @@ class _TornadoSpiralPainter extends CustomPainter {
         final x = center.dx + radius * math.cos(angle);
         final y = center.dy + radius * math.sin(angle);
         
-        // Créer le chemin du bras
-        if (firstPoint) {
-          path.moveTo(x, y);
-          firstPoint = false;
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      
-      // Dessiner l'ombre diffuse du bras (effet brouillard)
-      final shadowPaint = Paint()
-        ..color = colors[i % colors.length].withOpacity(0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = armWidth * 1.5
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15.0);
-      
-      canvas.drawPath(path, shadowPaint);
-    }
-    
-    // Maintenant dessiner les bras principaux
-    for (int i = 0; i < armCount; i++) {
-      final armPhase = i * (math.pi * 2 / armCount);
-      final rotationOffset = animationValue * math.pi * 2;
-      
-      final path = Path();
-      bool firstPoint = true;
-      
-      // Points pour former le chemin du bras
-      for (double t = 0.0; t <= 1.0; t += 0.005) {
-        // Formule de la spirale avec rotation animée
-        final angle = armPhase + turns * t * math.pi * 2 + rotationOffset;
-        final radius = t * maxRadius;
-        
-        // Position sur la spirale
-        final x = center.dx + radius * math.cos(angle);
-        final y = center.dy + radius * math.sin(angle);
-        
-        // Ajouter une légère variation pour un effet plus organique
-        final variation = math.sin(t * 10 + animationValue * math.pi * 4) * 2.0;
+        // Use cached variation
+        final variation = variations[variationIndex];
+        variationIndex = (variationIndex + 1) % variations.length;
         
         // Créer le chemin du bras
         if (firstPoint) {
@@ -358,25 +429,28 @@ class _TornadoSpiralPainter extends CustomPainter {
         }
       }
       
-      // Dessiner le bras principal
-      final paint = Paint()
-        ..color = colors[i % colors.length]
+      // Dessiner l'ombre diffuse du bras (effet brouillard)
+      // Use a simpler blur with lower quality but better performance
+      final shadowPaint = Paint()
+        ..color = color.withOpacity(0.25)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = armWidth
+        ..strokeWidth = armWidth * 1.2
         ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0); // Reduced blur radius
+      
+      canvas.drawPath(path, shadowPaint);
+      
+      // Dessiner le bras principal with simpler styling
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = armWidth * 0.7 // Thinner for performance
+        ..strokeCap = StrokeCap.round;
       
       canvas.drawPath(path, paint);
       
-      // Ajouter un effet lumineux au centre du bras
-      final highlightPaint = Paint()
-        ..color = Colors.white.withOpacity(0.7)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = armWidth * 0.4
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
-      
-      canvas.drawPath(path, highlightPaint);
+      // Skip the highlight effect for better performance
+      // The shadow and main color still give a nice effect
     }
   }
 
