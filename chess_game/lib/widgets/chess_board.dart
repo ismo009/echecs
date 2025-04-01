@@ -152,14 +152,15 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
     final gameProvider = Provider.of<GameProvider>(context, listen: false);
     final currentTurn = gameProvider.game.currentTurn;
     final moveValidator = MoveValidator();
-    
+    final lastMove = gameProvider.lastMove; // Access lastMove through provider
+
     // If no piece is selected yet
     if (_selectedRow == null) {
       final piece = widget.board.getPieceAt(row, col);
       if (piece != null && piece.color == currentTurn) {
         // Get valid moves for this piece
-        _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
-        
+        _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn, lastMove);
+
         setState(() {
           _selectedRow = row;
           _selectedCol = col;
@@ -169,31 +170,37 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
       // A piece was already selected
       // Check if the tap is on a valid move
       final isValidMove = _validMoves.any((move) => move[0] == row && move[1] == col);
-      
+
       if (isValidMove) {
-        // Execute the move
+        // Execute the move through the provider
         widget.onPieceMoved(_selectedRow!, _selectedCol!, row, col);
+        
+        setState(() {
+          _selectedRow = null;
+          _selectedCol = null;
+          _validMoves = [];
+        });
       } else {
         // Check if selecting a different piece of the same color
         final piece = widget.board.getPieceAt(row, col);
         if (piece != null && piece.color == currentTurn) {
           // Get valid moves for the new piece
-          _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
-          
+          _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn, lastMove);
+
           setState(() {
             _selectedRow = row;
             _selectedCol = col;
           });
           return;
         }
+        
+        // Clear selection if clicking elsewhere
+        setState(() {
+          _selectedRow = null;
+          _selectedCol = null;
+          _validMoves = [];
+        });
       }
-      
-      // Clear selection and valid moves
-      setState(() {
-        _selectedRow = null;
-        _selectedCol = null;
-        _validMoves = [];
-      });
     }
   }
 }
