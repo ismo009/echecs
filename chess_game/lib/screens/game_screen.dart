@@ -116,7 +116,7 @@ class GameScreen extends StatelessWidget {
 }
 
 //Pour l'animation de deplacement
-void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context) {
+void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, {String moveType = 'move'}) {
   // Position de départ et d'arrivée dans le système de coordonnées de l'écran
   final screenWidth = MediaQuery.of(context).size.width;
   final boardSize = screenWidth * 0.9;
@@ -126,13 +126,40 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
   final overlayState = Overlay.of(context);
   late OverlayEntry overlayEntry;
   
-  // Séquence d'images pour l'animation
-  final List<String> animationFrames = [
-    'assets/images/animations/deplacement0.png',
-    'assets/images/animations/deplacement1.png',
-    'assets/images/animations/deplacement2.png',
-    'assets/images/animations/deplacement3.png',
-  ];
+  // Séquence d'images pour l'animation selon le type de mouvement
+  List<String> animationFrames;
+  int frameDuration;
+  
+  switch (moveType) {
+    case 'capture':
+      animationFrames = [
+        'assets/images/animations/capture0.png',
+        'assets/images/animations/capture1.png',
+        'assets/images/animations/capture2.png',
+        'assets/images/animations/capture3.png',
+      ];
+      frameDuration = 120; // Un peu plus lent pour la capture
+      break;
+    case 'promotion':
+      animationFrames = [
+        'assets/images/animations/promotion0.png',
+        'assets/images/animations/promotion1.png',
+        'assets/images/animations/promotion2.png',
+        'assets/images/animations/promotion3.png',
+      ];
+      frameDuration = 150; // Plus lent pour la promotion
+      break;
+    case 'move':
+    default:
+      animationFrames = [
+        'assets/images/animations/deplacement0.png',
+        'assets/images/animations/deplacement1.png',
+        'assets/images/animations/deplacement2.png',
+        'assets/images/animations/deplacement3.png',
+      ];
+      frameDuration = 100; // Standard pour un mouvement simple
+      break;
+  }
   
   int currentFrame = 0;
   
@@ -168,9 +195,6 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
   
   // Ajouter l'overlay à l'écran
   overlayState.insert(overlayEntry);
-  
-  // Animation timer
-  int frameDuration = 100; // Millisecondes par image
   
   void nextFrame() {
     if (currentFrame < animationFrames.length - 1) {
