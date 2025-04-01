@@ -20,10 +20,6 @@ class ChessPieceWidget extends StatelessWidget {
     String pieceColor = piece.color == PieceColor.white ? 'w' : 'b';
     String pieceType = '';
     
-    // Création du chemin de l'image basé sur le type et la couleur de la pièce
-    String pieceColor = piece.color == PieceColor.white ? 'w' : 'b';
-    String pieceType = '';
-    
     switch (piece.type) {
       case PieceType.king:
         pieceType = 'king';
@@ -46,13 +42,6 @@ class ChessPieceWidget extends StatelessWidget {
     }
     
     //Chemin complet
-    String imagePath = 'assets/images/pieces/${pieceType}.${pieceColor}.png';
-    
-    return SizedBox(
-      width: size,
-      height: size,
-    
-    // Construction du chemin complet de l'image
     String imagePath = 'assets/images/pieces/${pieceType}.${pieceColor}.png';
     
     return SizedBox(
