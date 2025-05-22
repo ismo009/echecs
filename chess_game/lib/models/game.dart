@@ -80,6 +80,10 @@ class ChessGame {
       isEnPassantCapture = true;
     }
 
+    bool isAPiece(row, col) {
+      return board.getPieceAt(row, col) != null;
+    }
+
     // Execute move on board
     board.movePiece(fromRow, fromCol, toRow, toCol);
 

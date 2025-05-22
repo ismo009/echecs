@@ -15,7 +15,7 @@ class ChessApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => GameProvider(),
       child: MaterialApp(
-        title: 'Chess Game',
+        title: "Spirale de l'echec",
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,

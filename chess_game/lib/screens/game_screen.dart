@@ -83,11 +83,21 @@ class GameScreen extends StatelessWidget {
                   child: ChessBoardWidget(
                     board: Provider.of<GameProvider>(context).game.board,
                     onPieceMoved: (fromRow, fromCol, toRow, toCol) {
-                      Provider.of<GameProvider>(context, listen: false)
-                          .makeMove(fromRow, fromCol, toRow, toCol);
+                      // Obtenir l'instance du GameProvider
+                      final gameProvider = Provider.of<GameProvider>(context, listen: false);
                       
-                      // Jouer l'animation après le déplacement
-                      playMoveAnimation(fromRow, fromCol, toRow, toCol, context);
+                      if (gameProvider.game.board.getPieceAt(toRow, toCol) != null) { //Cas capture
+                        gameProvider.makeMove(fromRow, fromCol, toRow, toCol);
+                        if(gameProvider.game.currentTurn == PieceColor.white) {
+                          playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "captureB");
+                        } else {
+                          playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "captureW");
+                        }
+                      }
+                      else { //Cas move
+                        gameProvider.makeMove(fromRow, fromCol, toRow, toCol);
+                        playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "move");
+                      }
                     },
                   ),
                 ),
@@ -120,7 +130,7 @@ class GameScreen extends StatelessWidget {
 }
 
 //Pour l'animation de deplacement
-void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, {String moveType = 'move'}) {  
+void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, String moveType) {  
   // Créer un overlay pour l'animation
   final overlayState = Overlay.of(context);
   late OverlayEntry overlayEntry;
@@ -130,14 +140,31 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
   int frameDuration;
   
   switch (moveType) {
-    case 'capture':
+    case 'captureW':
       animationFrames = [
-        'assets/images/animations/capture0.png',
-        'assets/images/animations/capture1.png',
-        'assets/images/animations/capture2.png',
-        'assets/images/animations/capture3.png',
+        'assets/images/animations/captureW0.png',
+        'assets/images/animations/captureW1.png',
+        'assets/images/animations/captureW2.png',
+        'assets/images/animations/captureW3.png',
+        'assets/images/animations/captureW4.png',
+        'assets/images/animations/captureW5.png',
+        'assets/images/animations/captureW6.png',
+        'assets/images/animations/captureW7.png',
       ];
-      frameDuration = 120;
+      frameDuration = 90;
+      break;
+    case 'captureB':
+      animationFrames = [
+        'assets/images/animations/captureB0.png',
+        'assets/images/animations/captureB1.png',
+        'assets/images/animations/captureB2.png',
+        'assets/images/animations/captureB3.png',
+        'assets/images/animations/captureB4.png',
+        'assets/images/animations/captureB5.png',
+        'assets/images/animations/captureB6.png',
+        'assets/images/animations/captureB7.png',
+      ];
+      frameDuration = 90;
       break;
     case 'promotion':
       animationFrames = [
