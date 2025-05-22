@@ -91,7 +91,7 @@ class GameRules {
       case PieceType.queen:
         return validateQueenMove(board, fromRow, fromCol, toRow, toCol);
       case PieceType.king:
-        return validateKingMove(piece.hasMoved, fromRow, fromCol, toRow, toCol);
+        return validateKingMove(board, piece.hasMoved, fromRow, fromCol, toRow, toCol);
     }
   }
   
@@ -191,17 +191,59 @@ class GameRules {
   }
   
   // Validates king movement
-  static bool validateKingMove(bool kingHasMoved, int fromRow, int fromCol, int toRow, int toCol) {
-    final rowDiff = (fromRow - toRow).abs();
-    final colDiff = (fromCol - toCol).abs();
-    
-    // King moves one square in any direction
-    if (rowDiff <= 1 && colDiff <= 1) {
-      return true;
-    }
-    
-    // TODO: Implement castling
-    
-    return false;
+  static bool validateKingMove(
+    ChessBoard board,
+    bool kingHasMoved,
+    int fromRow,
+    int fromCol,
+    int toRow,
+    int toCol,
+) {
+  final rowDiff = (fromRow - toRow).abs();
+  final colDiff = (fromCol - toCol).abs();
+
+  // King moves one square in any direction
+  if (rowDiff <= 1 && colDiff <= 1) {
+    return true;
   }
+
+  // Castling
+  if (!kingHasMoved && fromRow == toRow && colDiff == 2) {
+    final kingColor = board.getPieceAt(fromRow, fromCol)!.color;
+
+    // King-side castling
+    if (toCol > fromCol) {
+      // Squares between king and rook must be empty
+      if (board.getPieceAt(fromRow, fromCol + 1) == null &&
+          board.getPieceAt(fromRow, fromCol + 2) == null) {
+        final rook = board.getPieceAt(fromRow, fromCol + 3);
+        if (rook != null && rook.type == PieceType.rook && !rook.hasMoved) {
+          // King must not be in check, nor pass through or land on attacked squares
+          if (!isKingInCheck(board, kingColor) &&
+              !isKingInCheck(board.copy()..movePiece(fromRow, fromCol, fromRow, fromCol + 1), kingColor) &&
+              !isKingInCheck(board.copy()..movePiece(fromRow, fromCol, fromRow, fromCol + 2), kingColor)) {
+            return true;
+          }
+        }
+      }
+    }
+    // Queen-side castling
+    else if (toCol < fromCol) {
+      if (board.getPieceAt(fromRow, fromCol - 1) == null &&
+          board.getPieceAt(fromRow, fromCol - 2) == null &&
+          board.getPieceAt(fromRow, fromCol - 3) == null) {
+        final rook = board.getPieceAt(fromRow, fromCol - 4);
+        if (rook != null && rook.type == PieceType.rook && !rook.hasMoved) {
+          if (!isKingInCheck(board, kingColor) &&
+              !isKingInCheck(board.copy()..movePiece(fromRow, fromCol, fromRow, fromCol - 1), kingColor) &&
+              !isKingInCheck(board.copy()..movePiece(fromRow, fromCol, fromRow, fromCol - 2), kingColor)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
 }
