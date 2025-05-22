@@ -1,2 +1,0 @@
-C:/Users/isrop/OneDrive/Escritorio/INSA/dev_mobile/echec/echecs/chess_game/android/app/.cxx/Debug/u6n5871y/arm64-v8a/CMakeFiles/edit_cache.dir
-C:/Users/isrop/OneDrive/Escritorio/INSA/dev_mobile/echec/echecs/chess_game/android/app/.cxx/Debug/u6n5871y/arm64-v8a/CMakeFiles/rebuild_cache.dir
