@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
-import 'bot_game_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -56,29 +55,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: const Text('Nouvelle Partie avec un ami'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BotGameScreen(skillLevel: 1),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.green.shade900,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Text('Jouer contre un bot'),
+                child: const Text('Start New Game'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -100,7 +77,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: const Text('Paramètres'),
+                child: const Text('Settings'),
               ),
             ],
           ),

@@ -10,14 +10,12 @@ class ChessBoardWidget extends StatefulWidget {
   final ChessBoard board;
   final Function(int, int, int, int) onPieceMoved;
   final List<List<bool>>? highlightedSquares;
-  final bool enabled; // <-- Ajoute cette ligne
 
   const ChessBoardWidget({
     Key? key,
     required this.board,
     required this.onPieceMoved,
     this.highlightedSquares,
-    this.enabled = true, // <-- Ajoute cette ligne (valeur par défaut)
   }) : super(key: key);
 
   @override
@@ -31,6 +29,15 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final gameProvider = Provider.of<GameProvider>(context);
+
+    // Vérification de promotion en attente
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (gameProvider.isPromotionPending) {
+        _showPromotionDialog(context);
+      }
+    });
+
     final screenWidth = MediaQuery.of(context).size.width;
     final boardSize = screenWidth > 600 ? 600.0 : screenWidth - 32;
     final squareSize = boardSize / 8;
@@ -52,15 +59,15 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
             final isWhiteSquare = (row + col) % 2 == 0;
             final piece = widget.board.getPieceAt(row, col);
             final isSelected = _selectedRow == row && _selectedCol == col;
-            
+
             // Check if square is a valid move
             final isValidMove = _validMoves.any((move) => move[0] == row && move[1] == col);
-            
+
             // Check if square is highlighted
-            final isHighlighted = widget.highlightedSquares != null && 
-                                  row < widget.highlightedSquares!.length && 
-                                  col < widget.highlightedSquares![row].length && 
-                                  widget.highlightedSquares![row][col];
+            final isHighlighted = widget.highlightedSquares != null &&
+                row < widget.highlightedSquares!.length &&
+                col < widget.highlightedSquares![row].length &&
+                widget.highlightedSquares![row][col];
 
             return GestureDetector(
               onTap: () => _handleTap(row, col),
@@ -80,7 +87,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
                     width: squareSize,
                     height: squareSize,
                   ),
-                  
+
                   // Rank and file labels
                   if (col == 0)
                     Positioned(
@@ -106,7 +113,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
                         ),
                       ),
                     ),
-                  
+
                   // Valid move indicator
                   if (isValidMove && piece == null)
                     Center(
@@ -119,16 +126,13 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
                         ),
                       ),
                     ),
-                  
+
                   // Piece
                   if (piece != null)
                     Center(
-                      child: ChessPieceWidget(
-                        piece: piece,
-                        size: squareSize * 0.8,
-                      ),
+                      child: _buildPiece(row, col),
                     ),
-                    
+
                   // Valid capture indicator
                   if (isValidMove && piece != null)
                     Container(
@@ -150,19 +154,19 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
   }
 
   void _handleTap(int row, int col) {
-    if (!widget.enabled) return; // <-- Ajoute cette ligne
     // Get access to the game provider for move validation
     final gameProvider = Provider.of<GameProvider>(context, listen: false);
     final currentTurn = gameProvider.game.currentTurn;
     final moveValidator = MoveValidator();
-    
+    final lastMove = gameProvider.lastMove; // Access lastMove through provider
+
     // If no piece is selected yet
     if (_selectedRow == null) {
       final piece = widget.board.getPieceAt(row, col);
       if (piece != null && piece.color == currentTurn) {
         // Get valid moves for this piece
-        _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
-        
+        _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn, lastMove);
+
         setState(() {
           _selectedRow = row;
           _selectedCol = col;
@@ -172,31 +176,166 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget> {
       // A piece was already selected
       // Check if the tap is on a valid move
       final isValidMove = _validMoves.any((move) => move[0] == row && move[1] == col);
-      
+
       if (isValidMove) {
-        // Execute the move
+        // Execute the move through the provider
         widget.onPieceMoved(_selectedRow!, _selectedCol!, row, col);
+
+        setState(() {
+          _selectedRow = null;
+          _selectedCol = null;
+          _validMoves = [];
+        });
       } else {
         // Check if selecting a different piece of the same color
         final piece = widget.board.getPieceAt(row, col);
         if (piece != null && piece.color == currentTurn) {
           // Get valid moves for the new piece
-          _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn);
-          
+          _validMoves = moveValidator.getValidMoves(widget.board, row, col, currentTurn, lastMove);
+
           setState(() {
             _selectedRow = row;
             _selectedCol = col;
           });
           return;
         }
+
+        // Clear selection if clicking elsewhere
+        setState(() {
+          _selectedRow = null;
+          _selectedCol = null;
+          _validMoves = [];
+        });
       }
-      
-      // Clear selection and valid moves
-      setState(() {
-        _selectedRow = null;
-        _selectedCol = null;
-        _validMoves = [];
-      });
+    }
+  }
+
+  void _showPromotionDialog(BuildContext context) {
+    final gameProvider = Provider.of<GameProvider>(context, listen: false);
+    final currentColor = gameProvider.game.currentTurn;
+
+    // Évite d'afficher le dialogue plusieurs fois
+    if (!gameProvider.isPromotionPending) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Promouvoir le pion'),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _promotionButton(context, PieceType.queen, currentColor),
+              _promotionButton(context, PieceType.rook, currentColor),
+              _promotionButton(context, PieceType.bishop, currentColor),
+              _promotionButton(context, PieceType.knight, currentColor),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _promotionButton(BuildContext context, PieceType type, PieceColor color) {
+    final gameProvider = Provider.of<GameProvider>(context, listen: false);
+    
+    // Nommer le type de pièce
+    String pieceType = '';
+    switch (type) {
+      case PieceType.queen:
+        pieceType = 'queen';
+        break;
+      case PieceType.rook:
+        pieceType = 'rook';
+        break;
+      case PieceType.bishop:
+        pieceType = 'bishop';
+        break;
+      case PieceType.knight:
+        pieceType = 'knight';
+        break;
+      default:
+        pieceType = 'pawn';
+    }
+    
+    // Couleur de la pièce
+    String pieceColor = color == PieceColor.white ? 'w' : 'b';
+    
+    // Chemin complet
+    String imagePath = 'assets/images/pieces/${pieceType}.${pieceColor}.png';
+    
+    return InkWell(
+      onTap: () {
+        gameProvider.promotePawn(type);
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        width: 50,
+        height: 50,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Image.asset(
+          imagePath,
+          width: 45,
+          height: 45,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/images/pieces/default.png',
+              width: 45,
+              height: 45,
+              fit: BoxFit.contain,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPiece(int row, int col) {
+    final piece = widget.board.getPieceAt(row, col);
+    if (piece == null) return Container();
+    
+    final gameProvider = Provider.of<GameProvider>(context, listen: false);
+    final isCheck = gameProvider.isKingInCheck && 
+                     piece.type == PieceType.king && 
+                     piece.color == gameProvider.game.currentTurn;
+    
+    // Utilisation du widget ChessPieceWidget pour la cohérence
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        ChessPieceWidget(
+          piece: piece,
+          size: MediaQuery.of(context).size.width > 600 ? 
+                600 / 8 - 10 : 
+                (MediaQuery.of(context).size.width - 32) / 8 - 10,
+        ),
+        if (isCheck)
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.red, width: 2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _getPieceName(PieceType type) {
+    switch (type) {
+      case PieceType.pawn: return 'pawn';
+      case PieceType.rook: return 'rook';
+      case PieceType.knight: return 'knight';
+      case PieceType.bishop: return 'bishop';
+      case PieceType.queen: return 'queen';
+      case PieceType.king: return 'king';
     }
   }
 }

@@ -5,71 +5,82 @@ import '../models/piece.dart';
 import '../services/move_validator.dart';
 
 class GameProvider extends ChangeNotifier {
-  late ChessGame _game;
+  ChessGame _game = ChessGame();
   final MoveValidator _moveValidator;
+  bool _isKingInCheck = false;
 
-  GameProvider() : _moveValidator = MoveValidator() {
-    _game = ChessGame();
-  }
+  GameProvider() : _moveValidator = MoveValidator();
 
   ChessGame get game => _game;
+  
+  // Accès au dernier mouvement
+  Move? get lastMove => _game.lastMove;
+  
+  // Obtenir l'historique des mouvements
+  List<Move> get moveHistory => _game.moveHistory;
+  
+  // Vérifier si une promotion est en attente
+  bool get isPromotionPending => _game.isPromotionPending;
+  
+  // Vérifier si le roi est en échec
+  bool get isKingInCheck => _isKingInCheck;
 
-  // Make a move if it's valid
+  // Effectuer un mouvement s'il est valide
   void makeMove(int fromRow, int fromCol, int toRow, int toCol) {
     final piece = _game.board.getPieceAt(fromRow, fromCol);
-    
-    // Ensure the piece exists and belongs to the current player
+
+    // S'assurer que la pièce existe et appartient au joueur actuel
     if (piece == null || piece.color != _game.currentTurn) {
       return;
     }
 
-    // Validate the move
-    if (!_moveValidator.isValidMove(_game.board, fromRow, fromCol, toRow, toCol, _game.currentTurn)) {
+    // Vérifier si le mouvement laisserait le roi en échec
+    if (_moveValidator.wouldLeaveKingInCheck(_game.board, fromRow, fromCol, toRow, toCol, _game.currentTurn)) {
+      // Ne pas permettre le mouvement
       return;
     }
 
-    // Create move object
-    final from = Position(row: fromRow, col: fromCol);
-    final to = Position(row: toRow, col: toCol);
-    final capturedPiece = _game.board.getPieceAt(toRow, toCol);
-    
-    // Create the move
-    final move = Move(
-      from: from,
-      to: to,
-      piece: piece,
-      capturedPiece: capturedPiece,
+    // Vérifier la validité du mouvement (y compris en passant)
+    final validMoves = _moveValidator.getValidMoves(
+      _game.board, 
+      fromRow, 
+      fromCol, 
+      _game.currentTurn,
+      lastMove
     );
     
-    // Execute the move
-    _game.makeMove(move);
+    final isValidMove = validMoves.any((move) => move[0] == toRow && move[1] == toCol);
     
-    // Update game state after the move
-    _updateGameState();
+    if (!isValidMove) {
+      return;
+    }
+
+    // Exécuter le mouvement
+    _game.makeMove(fromRow, fromCol, toRow, toCol);
     
-    // Notify listeners about the change
+    // Vérifier si le roi adverse est en échec après ce mouvement
+    PieceColor opponentColor = _game.currentTurn; // déjà changé dans makeMove
+    _isKingInCheck = _moveValidator.isKingInCheck(_game.board, opponentColor);
+    
+    // Notifier les auditeurs
     notifyListeners();
   }
-
-  // Update the game state based on the current board position
-  void _updateGameState() {
-    final opposingColor = _game.currentTurn;
+  
+  // Promouvoir un pion
+  void promotePawn(PieceType promotionType) {
+    _game.promotePawn(promotionType);
     
-    // Check for checkmate or stalemate
-    if (_moveValidator.isCheckmate(_game.board, opposingColor)) {
-      _game.state = GameState.checkmate;
-    } else if (_moveValidator.isStalemate(_game.board, opposingColor)) {
-      _game.state = GameState.stalemate;
-    } else if (_moveValidator.isKingInCheck(_game.board, opposingColor)) {
-      _game.state = GameState.check;
-    } else {
-      _game.state = GameState.active;
-    }
+    // Vérifier si le roi adverse est en échec après la promotion
+    PieceColor opponentColor = _game.currentTurn;
+    _isKingInCheck = _moveValidator.isKingInCheck(_game.board, opponentColor);
+    
+    notifyListeners();
   }
-
-  // Reset the game to initial state
+  
+  // Réinitialiser le jeu
   void resetGame() {
     _game.reset();
+    _isKingInCheck = false;
     notifyListeners();
   }
 }

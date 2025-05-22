@@ -24,15 +24,4 @@ class ChessPiece {
         color: color,
         hasMoved: hasMoved,
       );
-
-    String toFENSymbol() {
-      if (type == PieceType.knight) {
-        return color == PieceColor.white ? 'N' : 'n';
-      }
-      else {
-        final symbol = type.toString().split('.').last[0];
-        return color == PieceColor.white ? symbol.toUpperCase() : symbol.toLowerCase();
-      }
-    
-  }
 }
