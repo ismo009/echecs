@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.vscode/launch.json
+.vscode/settings.json
+.vscode/c_cpp_properties.json
