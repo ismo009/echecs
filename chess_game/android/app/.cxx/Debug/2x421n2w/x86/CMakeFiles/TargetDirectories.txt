@@ -1,2 +1,0 @@
-D:/Info/Dev Mobile/echecs/chess_game/android/app/.cxx/Debug/2x421n2w/x86/CMakeFiles/edit_cache.dir
-D:/Info/Dev Mobile/echecs/chess_game/android/app/.cxx/Debug/2x421n2w/x86/CMakeFiles/rebuild_cache.dir
