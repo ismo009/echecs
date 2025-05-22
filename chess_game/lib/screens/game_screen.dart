@@ -12,6 +12,8 @@ import '../models/piece.dart'; // Import PieceColor enum
 class GameScreen extends StatelessWidget {
   const GameScreen({Key? key}) : super(key: key);
 
+  static final GlobalKey chessBoardKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -75,20 +77,32 @@ class GameScreen extends StatelessWidget {
               // Plateau d'échecs
               Center( 
                 child: SizedBox(
+                  key: chessBoardKey, // Ajoutez la clé ici
                   width: screenWidth * 0.9,
-                  height: screenWidth * 1.1, //Bizarre car pas carré, mais sinon l'affichage bug
+                  height: screenWidth * 1.1,
                   child: ChessBoardWidget(
                     board: Provider.of<GameProvider>(context).game.board,
                     onPieceMoved: (fromRow, fromCol, toRow, toCol) {
-                      Provider.of<GameProvider>(context, listen: false)
-                          .makeMove(fromRow, fromCol, toRow, toCol);
+                      // Obtenir l'instance du GameProvider
+                      final gameProvider = Provider.of<GameProvider>(context, listen: false);
                       
-                      // Jouer l'animation après le déplacement
-                      playMoveAnimation(fromRow, fromCol, toRow, toCol, context);
+                      if (gameProvider.game.board.getPieceAt(toRow, toCol) != null) { //Cas capture
+                        gameProvider.makeMove(fromRow, fromCol, toRow, toCol);
+                        if(gameProvider.game.currentTurn == PieceColor.white) {
+                          playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "captureB");
+                        } else {
+                          playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "captureW");
+                        }
+                      }
+                      else { //Cas move
+                        gameProvider.makeMove(fromRow, fromCol, toRow, toCol);
+                        playMoveAnimation(fromRow, fromCol, toRow, toCol, context, "move");
+                      }
                     },
                   ),
                 ),
               ),
+              
 
               // Timer blanc
               Container(
@@ -116,12 +130,7 @@ class GameScreen extends StatelessWidget {
 }
 
 //Pour l'animation de deplacement
-void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, {String moveType = 'move'}) {
-  // Position de départ et d'arrivée dans le système de coordonnées de l'écran
-  final screenWidth = MediaQuery.of(context).size.width;
-  final boardSize = screenWidth * 0.9;
-  final cellSize = boardSize / 8;
-  
+void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildContext context, String moveType) {  
   // Créer un overlay pour l'animation
   final overlayState = Overlay.of(context);
   late OverlayEntry overlayEntry;
@@ -131,14 +140,31 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
   int frameDuration;
   
   switch (moveType) {
-    case 'capture':
+    case 'captureW':
       animationFrames = [
-        'assets/images/animations/capture0.png',
-        'assets/images/animations/capture1.png',
-        'assets/images/animations/capture2.png',
-        'assets/images/animations/capture3.png',
+        'assets/images/animations/captureW0.png',
+        'assets/images/animations/captureW1.png',
+        'assets/images/animations/captureW2.png',
+        'assets/images/animations/captureW3.png',
+        'assets/images/animations/captureW4.png',
+        'assets/images/animations/captureW5.png',
+        'assets/images/animations/captureW6.png',
+        'assets/images/animations/captureW7.png',
       ];
-      frameDuration = 120; // Un peu plus lent pour la capture
+      frameDuration = 90;
+      break;
+    case 'captureB':
+      animationFrames = [
+        'assets/images/animations/captureB0.png',
+        'assets/images/animations/captureB1.png',
+        'assets/images/animations/captureB2.png',
+        'assets/images/animations/captureB3.png',
+        'assets/images/animations/captureB4.png',
+        'assets/images/animations/captureB5.png',
+        'assets/images/animations/captureB6.png',
+        'assets/images/animations/captureB7.png',
+      ];
+      frameDuration = 90;
       break;
     case 'promotion':
       animationFrames = [
@@ -147,7 +173,7 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
         'assets/images/animations/promotion2.png',
         'assets/images/animations/promotion3.png',
       ];
-      frameDuration = 150; // Plus lent pour la promotion
+      frameDuration = 150;
       break;
     case 'move':
     default:
@@ -157,7 +183,7 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
         'assets/images/animations/deplacement2.png',
         'assets/images/animations/deplacement3.png',
       ];
-      frameDuration = 100; // Standard pour un mouvement simple
+      frameDuration = 100;
       break;
   }
   
@@ -165,7 +191,15 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
   
   // Calculer la position du plateau d'échecs sur l'écran avec correction
   // Augmenter la valeur de boardTopOffset pour déplacer l'animation vers le bas
-  final double boardTopOffset = MediaQuery.of(context).size.height * 0.31; // Ajusté vers le bas
+  final RenderBox? boardBox = GameScreen.chessBoardKey.currentContext?.findRenderObject() as RenderBox?;
+  final Offset? boardPosition = boardBox?.localToGlobal(Offset.zero);
+  
+  final screenWidth = MediaQuery.of(context).size.width;
+  final boardSize = screenWidth * 0.9;
+  final cellSize = boardSize / 8;
+  
+  // Position absolue sur l'écran
+  final boardLeftOffset = (screenWidth - boardSize) / 2;
   
   overlayEntry = OverlayEntry(
     builder: (context) {
@@ -175,12 +209,9 @@ void playMoveAnimation(int fromRow, int fromCol, int toRow, int toCol, BuildCont
           final toXPos = toCol * cellSize;
           final toYPos = toRow * cellSize;
           
-          // Position absolue sur l'écran
-          final boardLeftOffset = (screenWidth - boardSize) / 2;
-          
           return Positioned(
             left: boardLeftOffset + toXPos,
-            top: boardTopOffset + toYPos + (cellSize * 2), // Ajout de 2 cases vers le bas
+            top: (boardPosition?.dy ?? 0) + toYPos + cellSize,
             width: cellSize,
             height: cellSize,
             child: Image.asset(
