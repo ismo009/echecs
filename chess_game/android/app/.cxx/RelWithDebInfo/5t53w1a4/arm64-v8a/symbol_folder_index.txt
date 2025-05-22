@@ -1,1 +1,0 @@
-D:\Info\Dev Mobile\echecs\chess_game\build\app\intermediates\cxx\RelWithDebInfo\5t53w1a4\obj\arm64-v8a
