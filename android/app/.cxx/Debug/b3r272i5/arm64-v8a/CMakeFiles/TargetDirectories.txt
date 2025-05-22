@@ -1,0 +1,2 @@
+C:/Users/jbreu/Documents/GitHub/echecs/chess_game/android/app/.cxx/Debug/b3r272i5/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/jbreu/Documents/GitHub/echecs/chess_game/android/app/.cxx/Debug/b3r272i5/arm64-v8a/CMakeFiles/rebuild_cache.dir
