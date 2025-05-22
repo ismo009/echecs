@@ -416,7 +416,45 @@ class MoveValidator {
       }
     }
     
-    // Rochade (à implémenter si nécessaire)
+    // Rochade (Castling)
+    final piece = board.getPieceAt(row, col);
+    if (piece != null && !piece.hasMoved) {
+      // Vérifier les deux côtés pour la rochade
+      // Côté roi
+      if (col + 2 < 8) {
+      final rook = board.getPieceAt(row, col + 3);
+      if (rook != null && rook.type == PieceType.rook && !rook.hasMoved) {
+        // Vérifier que les cases entre le roi et la tour sont vides
+        if (board.getPieceAt(row, col + 1) == null &&
+          board.getPieceAt(row, col + 2) == null) {
+        // Vérifier que le roi ne passe pas par une case attaquée
+        if (!isKingInCheck(board, color) &&
+          !wouldLeaveKingInCheck(board, row, col, row, col + 1, color) &&
+          !wouldLeaveKingInCheck(board, row, col, row, col + 2, color)) {
+          validMoves.add([row, col + 2]);
+        }
+        }
+      }
+      }
+
+      // Côté dame
+      if (col - 2 >= 0) {
+      final rook = board.getPieceAt(row, col - 4);
+      if (rook != null && rook.type == PieceType.rook && !rook.hasMoved) {
+        // Vérifier que les cases entre le roi et la tour sont vides
+        if (board.getPieceAt(row, col - 1) == null &&
+          board.getPieceAt(row, col - 2) == null &&
+          board.getPieceAt(row, col - 3) == null) {
+        // Vérifier que le roi ne passe pas par une case attaquée
+        if (!isKingInCheck(board, color) &&
+          !wouldLeaveKingInCheck(board, row, col, row, col - 1, color) &&
+          !wouldLeaveKingInCheck(board, row, col, row, col - 2, color)) {
+          validMoves.add([row, col - 2]);
+        }
+        }
+      }
+      }
+    }
     
     return validMoves;
   }
